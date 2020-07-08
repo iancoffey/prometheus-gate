@@ -1,12 +1,12 @@
 # prometheus-gate
 
-`prometheus-gate` is a small utility image that is intended to block the execution of Pipelines based on the results Prometheus RangeQuery.
+A small utility image that is intended to block the execution of Pipelines based on the results Prometheus RangeQuery.
 
- This tool uses a Range Query, a target Value and a duration of time, and enforces that the metrics match the criteria before exiting 0. If the criteria are not met by the timeout, it will exit non-zero.
+This tool uses a [Range Query](https://prometheus.io/docs/prometheus/latest/querying/basics/#range-vector-selectors), a target Value and a duration of time, and enforces that the metrics match the criteria before exiting 0. If the criteria are not met by the timeout, it will exit non-zero.
 
 So, you can gate your deployment from staging to QA until the staging environment has had 3 replicas available consistently for 10 minutes. Or, you could gate your ML models Canary deployment until the new models R2 score proves to be > N for 30 minutes.
 
-Anything that can emit metrics to Prometheus can be used to form your query, there is no limit to the type of metrics that can be checked with this.
+Anything that can emit metrics to Prometheus can be used to form your query, there is no limit to the type of assertions aside that the return type needs to be a Matrix.
 
 ## Configuration
 
