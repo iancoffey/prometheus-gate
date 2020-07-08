@@ -19,8 +19,8 @@ type Config struct {
 	PrometheusEndpoint string        `env:"PROMETHEUS_ENDPOINT,default=localhost"`
 	RangeQuery         string        `env:"RANGE_QUERY,required"`
 	RangeTime          time.Duration `env:"RANGE_TIME,default=-5m"`
-	TargetValue        int           `env:"TARGET_VALUE"`
-	TargetStrategy     string        `env:"TARGET_STRATEGY,default=min"` // valid values: max, min
+	TargetValue        int           `env:"TARGET_VALUE,required"`
+	TargetStrategy     string        `env:"TARGET_STRATEGY,default=min"` // valid values: max, min, equals
 	Timeout            time.Duration `env:"TIMEOUT,default=10m"`
 	TickTime           time.Duration `env:"TICK_TIME,default=1m"`
 }
@@ -92,6 +92,11 @@ func queryPrometheusState(ctx context.Context, v1api v1.API, cfg Config, r v1.Ra
 				case "max":
 					if cfg.TargetValue > int(v.Value) {
 						log.Printf("at=above-max value=%d", int(v.Value))
+						return false
+					}
+				case "equals":
+					if cfg.TargetValue != int(v.Value) {
+						log.Printf("at=unequals value=%d", int(v.Value))
 						return false
 					}
 				default:
