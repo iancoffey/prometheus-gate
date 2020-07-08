@@ -1,6 +1,6 @@
 # prometheus-gate
 
-`prometheus-gate` is a small utility image that is intended to block Pipeline eecutions based on the results Prometheus RangeQuery.
+`prometheus-gate` is a small utility image that is intended to block the execution of Pipelines based on the results Prometheus RangeQuery.
 
  This tool uses a Range Query, a target Value and a duration of time, and enforces that the metrics match the criteria before exiting 0. If the criteria are not met by the timeout, it will exit non-zero.
 
