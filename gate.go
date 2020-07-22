@@ -42,7 +42,7 @@ func main() {
 	}
 	v1api := v1.NewAPI(client)
 
-	_, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	r := v1.Range{
 		Start: time.Now().Add(cfg.RangeTime),
@@ -51,6 +51,7 @@ func main() {
 	}
 
 	ticker := time.NewTicker(cfg.TickTime)
+Done:
 	for {
 		select {
 		// timeout
@@ -58,9 +59,9 @@ func main() {
 			log.Fatal("at=timeout-exceeded")
 		case <-ticker.C:
 			log.Println("at=querying-prometheus")
-			if queryPrometheusState(context.Background(), v1api, cfg, r) {
+			if queryPrometheusState(ctx, v1api, cfg, r) {
 				log.Println("at=success-condition-met")
-				break
+				break Done
 			}
 		}
 	}
@@ -93,7 +94,7 @@ func queryPrometheusState(ctx context.Context, v1api v1.API, cfg Config, r v1.Ra
 			}
 
 			for _, v := range val.Values {
-				log.Printf("at=evaluating-value tiemstamp=%q value=%q", v.Timestamp, v.Value)
+				log.Printf("at=evaluating-value timestamp=%q value=%q", v.Timestamp, v.Value)
 				switch cfg.TargetStrategy {
 				case "min":
 					if cfg.TargetValue > int(v.Value) {
