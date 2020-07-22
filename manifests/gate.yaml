@@ -14,11 +14,11 @@ spec:
     spec:
       containers:
       - name: gate
-        image: ko://github.com/iancoffey/prometheus-gate/
+        image: github.com/iancoffey/prometheus-gate
         env:
         - name: TARGET_VALUE
           value: "1"
         - name: PROMETHEUS_ENDPOINT
           value: "http://prometheus-system-np.knative-monitoring.svc.cluster.local:8080"
         - name: RANGE_QUERY
-          value: kube_deployment_status_replicas{deployment="prometheus-gate", namespace="default", service="kube-state-metrics"}
+          value: kube_deployment_status_replicas{deployment="my-target", namespace="default", service="kube-state-metrics"}

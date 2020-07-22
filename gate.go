@@ -26,10 +26,13 @@ type Config struct {
 }
 
 func main() {
+	log.Println("at=gate-start")
+
 	var cfg Config
 	if err := envdecode.Decode(&cfg); err != nil {
 		log.Fatalf("Error decoding environment: %s\n", err)
 	}
+	log.Printf("TARGET_VALUE=%d TARGET_STRATEGY=%q RANGE_TIME=%q", cfg.TargetValue, cfg.TargetStrategy, cfg.RangeTime)
 
 	client, err := api.NewClient(api.Config{
 		Address: cfg.PrometheusEndpoint,
@@ -62,7 +65,7 @@ func main() {
 		}
 	}
 
-	log.Println("at=success")
+	log.Println("at=gate-success")
 }
 
 func queryPrometheusState(ctx context.Context, v1api v1.API, cfg Config, r v1.Range) bool {
@@ -78,25 +81,34 @@ func queryPrometheusState(ctx context.Context, v1api v1.API, cfg Config, r v1.Ra
 	switch {
 	case result.Type() == model.ValMatrix:
 		val := result.(model.Matrix)
+		if len(val) == 0 {
+			log.Printf("at=empty-value-set returned len=%d", len(val))
+			return false
+		}
 
 		for _, val := range val {
-			log.Printf("at=evaluating-metric metric=%q", val.Metric)
+			if len(val.Values) == 0 {
+				log.Printf("at=no-values-returned-for-range len=%d", len(val.Values))
+				return false
+			}
+
 			for _, v := range val.Values {
+				log.Printf("at=evaluating-value tiemstamp=%q value=%q", v.Timestamp, v.Value)
 				switch cfg.TargetStrategy {
 				case "min":
-					if cfg.TargetValue < int(v.Value) {
-						log.Printf("at=below-minimum value=%d", int(v.Value))
+					if cfg.TargetValue > int(v.Value) {
+						log.Printf("at=below-minimum min=%d value=%d", cfg.TargetValue, int(v.Value))
 						return false
 
 					}
 				case "max":
-					if cfg.TargetValue > int(v.Value) {
-						log.Printf("at=above-max value=%d", int(v.Value))
+					if cfg.TargetValue < int(v.Value) {
+						log.Printf("at=above-max max=%d value=%d", cfg.TargetValue, int(v.Value))
 						return false
 					}
 				case "equals":
 					if cfg.TargetValue != int(v.Value) {
-						log.Printf("at=unequals value=%d", int(v.Value))
+						log.Printf("at=unequals equals=%d value=%d", cfg.TargetValue, int(v.Value))
 						return false
 					}
 				default:
