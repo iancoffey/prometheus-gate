@@ -42,14 +42,6 @@ func main() {
 	}
 	v1api := v1.NewAPI(client)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	r := v1.Range{
-		Start: time.Now().Add(cfg.RangeTime),
-		End:   time.Now(),
-		Step:  time.Minute,
-	}
-
 	ticker := time.NewTicker(cfg.TickTime)
 Done:
 	for {
@@ -59,7 +51,7 @@ Done:
 			log.Fatal("at=timeout-exceeded")
 		case <-ticker.C:
 			log.Println("at=querying-prometheus")
-			if queryPrometheusState(ctx, v1api, cfg, r) {
+			if queryPrometheusState(v1api, cfg) {
 				log.Println("at=success-condition-met")
 				break Done
 			}
@@ -69,7 +61,15 @@ Done:
 	log.Println("at=gate-success")
 }
 
-func queryPrometheusState(ctx context.Context, v1api v1.API, cfg Config, r v1.Range) bool {
+func queryPrometheusState(v1api v1.API, cfg Config) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	r := v1.Range{
+		Start: time.Now().Add(cfg.RangeTime),
+		End:   time.Now(),
+		Step:  time.Minute,
+	}
+
 	result, warnings, err := v1api.QueryRange(ctx, cfg.RangeQuery, r)
 	if err != nil {
 		log.Printf("at=error-querying-prometheus error=%s", err)
@@ -81,13 +81,13 @@ func queryPrometheusState(ctx context.Context, v1api v1.API, cfg Config, r v1.Ra
 
 	switch {
 	case result.Type() == model.ValMatrix:
-		val := result.(model.Matrix)
-		if len(val) == 0 {
-			log.Printf("at=empty-value-set returned len=%d", len(val))
+		vals := result.(model.Matrix)
+		if len(vals) == 0 {
+			log.Printf("at=empty-value-set returned len=%d", len(vals))
 			return false
 		}
 
-		for _, val := range val {
+		for _, val := range vals {
 			if len(val.Values) == 0 {
 				log.Printf("at=no-values-returned-for-range len=%d", len(val.Values))
 				return false
